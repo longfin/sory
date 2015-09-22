@@ -1,6 +1,6 @@
 (ns chat.sound
   (:require [cljs.core.async :refer [<! put! chan]]
-            [chat.codec :refer [char-to-freq freq-to-char]])
+            [chat.codec :refer [freq-to-char]])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (def audio-context-constructor (or js/window.AudioContext
@@ -45,12 +45,10 @@
            gain-node (.createGain js-context)
            gain (.-gain gain-node)
            duration 0.2
-           ramp-duration 0.001
-           volume (+ 1 (/ (- freq 19000) 2000))]
+           ramp-duration 0.001]
        (.connect gain-node (.-destination js-context))
        (set! (.-value gain) 0)
        (set! (.-value (.-frequency oscillator)) freq)
-       (set! (.-value (.-type oscillator)) "sqaure")
        (.setValueAtTime gain 0 started-at)
        (.linearRampToValueAtTime gain 1 (+ started-at ramp-duration))
        (.setValueAtTime gain 1 (- (+ started-at duration) ramp-duration))
@@ -68,10 +66,7 @@
         (let [freq (nth freqs i)]
           (.log js/console started-at)
           (.emit-sound this freq started-at))
-        (recur (inc i) (+ started-at 0.5)))))
-
-  (send [this values]
-    (.emit-sounds this (map char-to-freq values)))
+        (recur (inc i) (+ started-at 0.4)))))
 
   (<listen [_]
     (let [c (chan)]
@@ -95,21 +90,6 @@
               (.connect mic analyser)
               (process [])))
       c)))
-
-(defn <decode [channel]
-  (let [c (chan)]
-    (go-loop []
-      (let [freqs (<! channel)
-            counted-freqs (map #(vector (count %) (first %))
-                               (partition-by #(< (js/Math.abs (- %1 %2)) 10) freqs))]
-        (.debug js/console (str counted-freqs))
-        (when-let [freq-pair (first
-                              (filter #(> (key %) 9) counted-freqs))]
-          (when-let [char (freq-to-char (val freq-pair))]
-            (.log js/console (str freq-pair "@" freqs))
-            (put! c char))))
-      (recur))
-    c))
 
 (defn initialize-audio-context []
   (let [js-context (audio-context-constructor.)]

@@ -1,9 +1,9 @@
 (ns chat.core
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [cljs.core.async :refer [<! chan]]
-            [dommy.core :refer [set-text! text] :refer-macros [sel1]]
-            [chat.sound :refer [initialize-audio-context <decode]]
-            [chat.codec :refer [freq-to-char char-to-freq]]))
+            [dommy.core :refer [set-text! text attr] :refer-macros [sel sel1]]
+            [chat.sound :refer [initialize-audio-context]]
+            [chat.codec :refer [encode <decode]]))
 
 
 (enable-console-print!)
@@ -33,19 +33,8 @@
 
 (defn setup-play []
   (let [audio-context (initialize-audio-context)]
-    (set! (.-onclick (sel1 :#a)) #(.emit-sound audio-context (char-to-freq :a)))
-    (set! (.-onclick (sel1 :#b)) #(.emit-sound audio-context (char-to-freq :b)))
-    (set! (.-onclick (sel1 :#c)) #(.emit-sound audio-context (char-to-freq :c)))
-    (set! (.-onclick (sel1 :#d)) #(.emit-sound audio-context (char-to-freq :d)))
-    (set! (.-onclick (sel1 :#e)) #(.emit-sound audio-context (char-to-freq :e)))
-    (set! (.-onclick (sel1 :#f)) #(.emit-sound audio-context (char-to-freq :f)))
-    (set! (.-onclick (sel1 :#g)) #(.emit-sound audio-context (char-to-freq :g)))
-    (set! (.-onclick (sel1 :#h)) #(.emit-sound audio-context (char-to-freq :h)))
-    (set! (.-onclick (sel1 :#i)) #(.emit-sound audio-context (char-to-freq :i)))
-    (set! (.-onclick (sel1 :#j)) #(.emit-sound audio-context (char-to-freq :j)))
-    (set! (.-onclick (sel1 :#k)) #(.emit-sound audio-context (char-to-freq :k)))
-    (set! (.-onclick (sel1 :#abc)) #(.send audio-context [:a :b :c]))
-    (set! (.-onclick (sel1 :#bbc)) #(.send audio-context [:b :b :c]))))
+    (doseq [el (sel :button)]
+      (set! (.-onclick el) #(.emit-sounds audio-context (encode (attr el :data-str)))))))
 
 
 (defn setup-mic []
