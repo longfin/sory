@@ -34,7 +34,7 @@
           (if (< max val)
             (recur (inc i) i val)
             (recur (inc i) index max)))
-        (when (< -70 max)
+        (when (< -80 max)
           (index-to-freq index))))))
 
 (deftype AudioContext [js-context]
@@ -82,7 +82,7 @@
                         (if-let [freq (peak-freq buffer nyquist)]
                           (.setTimeout js/window
                                        (partial process (conj buf freq))
-                                       10)
+                                       5)
                           (do
                             (when (not (empty? buf))
                               (put! c buf))

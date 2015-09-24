@@ -18,8 +18,8 @@
 (defn freq-to-char [freq]
   (if (> freq 18500)
     (let [s (seq codes)
-          filtered (filter #(and (< (- (last %) 20) freq)
-                                 (< freq (+ (last %) 20)))
+          filtered (filter #(and (< (- (last %) 25) freq)
+                                 (< freq (+ (last %) 25)))
                            s)]
       (first (first filtered)))))
 
@@ -37,12 +37,12 @@
     (go-loop []
       (let [freqs (<! channel)
             counted-freqs (map #(vector (count %) (first %))
-                               (partition-by #(< (js/Math.abs (- %1 %2)) 10) freqs))]
+                               (partition-by identity freqs))]
         (.debug js/console (str counted-freqs))
-        (when-let [freq-pair (first
-                              (filter #(> (key %) 9) counted-freqs))]
-          (when-let [char (freq-to-char (val freq-pair))]
-            (.log js/console (str freq-pair "@" freqs))
-            (put! c char))))
+        (when-let [freq-pairs (filter #(>= (key %) 20) counted-freqs)]
+          (doseq [freq-pair freq-pairs]
+            (when-let [char (freq-to-char (val freq-pair))]
+              (.log js/console (str freq-pair "@" freqs))
+              (put! c char)))))
       (recur))
     c))
