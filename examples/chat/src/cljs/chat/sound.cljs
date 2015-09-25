@@ -1,6 +1,5 @@
 (ns chat.sound
-  (:require [cljs.core.async :refer [<! put! chan]]
-            [chat.codec :refer [freq-to-char]])
+  (:require [cljs.core.async :refer [<! put! chan]])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (def audio-context-constructor (or js/window.AudioContext
@@ -64,7 +63,6 @@
            started-at (.-currentTime js-context)]
       (when (< i (count freqs))
         (let [freq (nth freqs i)]
-          (.log js/console started-at)
           (.emit-sound this freq started-at))
         (recur (inc i) (+ started-at 0.4)))))
 
@@ -85,7 +83,14 @@
                                        5)
                           (do
                             (when (not (empty? buf))
-                              (put! c buf))
+                              (let [counted-freqs (map #(vector (count %)
+                                                                (first %))
+                                                       (partition-by identity
+                                                                     buf))]
+                                (when-let [freq-pairs (filter #(>= (key %) 20)
+                                                              counted-freqs)]
+                                  (doseq [freq-pair freq-pairs]
+                                    (put! c (val freq-pair))))))
                             (.setTimeout js/window (partial process [] 10)))))]
               (.connect mic analyser)
               (process [])))

@@ -32,9 +32,14 @@
 
 
 (defn setup-play []
-  (let [audio-context (initialize-audio-context)]
-    (doseq [el (sel :button)]
-      (set! (.-onclick el) #(.emit-sounds audio-context (encode (attr el :data-str)))))))
+  (let [audio-context (initialize-audio-context)
+        form (sel1 :#chat)]
+    (set! (.-onsubmit form)
+          (fn [e]
+            (.preventDefault e)
+            (let [form (.-currentTarget e)
+                  message (.-value (aget (.-elements form) "message"))]
+              (.emit-sounds audio-context (encode message)))))))
 
 
 (defn setup-mic []
