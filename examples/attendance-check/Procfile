@@ -1,0 +1,1 @@
+web: java $JVM_OPTS -cp target/attendance-check.jar clojure.main -m attendance-check.core

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %} 전자 출결 로그인(학생용) {% endblock %}
+{% block body %}
+{% if errors %}
+<div class="alert alert-danger">{{ errors }}</div>
+{% endif %}
+<div>
+  <form class="form-signin" method="POST">
+    <h2 class="form-signin-heading">전자 출결 로그인(학생용)</h2>
+    <input name="email" type="email" class="form-control" placeholder="이메일" required autofocus>
+    <input name="password" type="password" class="form-control" placeholder="비밀번호" required>
+    <button class="btn btn-lg btn-primary btn-block" type="submit">로그인</button>
+  </form>
+</div>
+{% endblock %}

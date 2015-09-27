@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% endblock %}</title>
+  </head>
+  <body>
+    {% if errors %}
+    <div class="alert alert-danger">{{ errors }}</div>
+    {% endif %}
+    <div id="navbar">
+    </div>
+    <div class="container">
+      {% block body %}
+      {% endblock %}
+    </div>
+    <!-- scripts and styles -->
+    {% style "/assets/bootstrap/css/bootstrap.min.css" %}
+    {% style "/assets/bootstrap/css/bootstrap-theme.min.css" %}
+    {% style "/css/screen.css" %}
+  </body>
+</html>

@@ -1,0 +1,27 @@
+{% extends "student/base.html" %}
+{% block body %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>이름</th>
+      <th>이메일</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in students %}
+    <tr>
+      <td>{{ s.name }}</td>
+      <td><a href="/admin/students/{{ s._id }}/">{{ s.email }}</a></td>
+      <td>
+        <form action="/admin/students/{{ s._id }}/?__method__=delete" method="POST">
+          {% csrf-field %}
+          <button class="btn alert-danger">삭제</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a class="nav pull-right" href="/admin/students/new/">추가</a>
+{% endblock %}

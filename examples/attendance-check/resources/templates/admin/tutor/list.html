@@ -1,0 +1,27 @@
+{% extends "tutor/base.html" %}
+{% block body %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>이름</th>
+      <th>이메일</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in tutors %}
+    <tr>
+      <td>{{ t.email }}</td>
+      <td>{{ t.name }}</td>
+      <td>
+        <form action="/admin/tutors/{{ t._id }}/?__method__=delete" method="POST">
+          {% csrf-field %}
+          <button class="btn alert-danger" >삭제</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a class="nav pull-right" href="/admin/tutors/new/">추가</a>
+{% endblock %}
