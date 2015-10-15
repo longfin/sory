@@ -1,4 +1,4 @@
-(ns chat.codec
+(ns sory.codec
   (:require [cljs.core.async :refer [<! put! chan]])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 

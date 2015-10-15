@@ -1,4 +1,4 @@
-(ns chat.sound
+(ns sory.sound
   (:require [cljs.core.async :refer [<! put! chan]])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 

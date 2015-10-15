@@ -2,8 +2,8 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [cljs.core.async :refer [<! chan]]
             [dommy.core :refer [set-text! text attr] :refer-macros [sel sel1]]
-            [chat.sound :refer [initialize-audio-context]]
-            [chat.codec :refer [encode <decode]]))
+            [sory.sound :refer [initialize-audio-context]]
+            [sory.codec :refer [encode <decode]]))
 
 
 (enable-console-print!)
