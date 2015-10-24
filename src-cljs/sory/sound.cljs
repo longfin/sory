@@ -2,10 +2,12 @@
   (:require [cljs.core.async :refer [<! put! chan]])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
+
 (def audio-context-constructor (or js/window.AudioContext
                                    js/window.webkitAudiocontext))
 
-(defn- <stream []
+
+(defn- <media-stream []
   (let [c (chan)]
     (go
       (let [navigator (.-navigator js/window)
@@ -21,11 +23,15 @@
            (throw (js/Error. (str "Can't initialize media device. [" e "]")))))))
     c))
 
-(defn- peak-freq [arr nyquist]
+
+(defn- peak-freq [arr nyquist start-freq min-db]
   (let [buffer-length (.-length arr)
-        freq-to-index #(js/Math.round (* (/ % nyquist) buffer-length))
+        freq-to-index #(-> %
+                           (/ nyquist)
+                           (* buffer-length)
+                           js/Math.round)
         index-to-freq #(* % (/ nyquist buffer-length))]
-    (loop [i (freq-to-index 18500)
+    (loop [i (freq-to-index start-freq)
            index -1
            max (- (.-Infinity js/window))]
       (if (< i buffer-length)
@@ -33,18 +39,37 @@
           (if (< max val)
             (recur (inc i) i val)
             (recur (inc i) index max)))
-        (when (< -80 max)
+        (when (< min-db max)
           (index-to-freq index))))))
 
-(deftype AudioContext [js-context]
+
+(defn- fetch-freqs [analyser]
+  (let [buffer-length (.-frequencyBinCount analyser)
+        buffer (js/Float32Array. buffer-length)]
+    (.getFloatFrequencyData analyser buffer)
+    buffer))
+
+
+(defn- select-freqs [freqs threshold]
+  (->> freqs
+       (partition-by identity)
+       (map #(vector (count %) (first %)))
+       (filter #(>= (key %) threshold))
+       (map val)))
+
+
+(deftype AudioContext [js-context
+                       ramp-duration
+                       duration
+                       char-interval
+                       process-interval
+                       peak-threshold]
   Object
 
   (emit-sound [_ freq started-at]
      (let [oscillator (.createOscillator js-context)
            gain-node (.createGain js-context)
-           gain (.-gain gain-node)
-           duration 0.2
-           ramp-duration 0.001]
+           gain (.-gain gain-node)]
        (.connect gain-node (.-destination js-context))
        (set! (.-value gain) 0)
        (set! (.-value (.-frequency oscillator)) freq)
@@ -64,38 +89,48 @@
       (when (< i (count freqs))
         (let [freq (nth freqs i)]
           (.emit-sound this freq started-at))
-        (recur (inc i) (+ started-at 0.4)))))
+        (recur (inc i) (+ started-at char-interval)))))
 
   (<listen [_]
     (let [c (chan)]
       (go
-        (let [stream (<! (<stream))
+        (let [stream (<! (<media-stream))
               analyser (.createAnalyser js-context)
               mic (.createMediaStreamSource js-context stream)
-              buffer-length (.-frequencyBinCount analyser)
-              buffer (js/Float32Array. buffer-length)
               nyquist (/ (.-sampleRate js-context) 2)
-              process (fn process [buf]
-                        (.getFloatFrequencyData analyser buffer)
-                        (if-let [freq (peak-freq buffer nyquist)]
-                          (.setTimeout js/window
-                                       (partial process (conj buf freq))
-                                       5)
-                          (do
-                            (when (not (empty? buf))
-                              (let [counted-freqs (map #(vector (count %)
-                                                                (first %))
-                                                       (partition-by identity
-                                                                     buf))]
-                                (when-let [freq-pairs (filter #(>= (key %) 20)
-                                                              counted-freqs)]
-                                  (doseq [freq-pair freq-pairs]
-                                    (put! c (val freq-pair))))))
-                            (.setTimeout js/window (partial process [] 10)))))]
+              process (fn process [backlog]
+                        (let [raw-freqs (fetch-freqs analyser)]
+                          (if-let [freq (peak-freq raw-freqs nyquist 18000 -80)]
+                            (.setTimeout js/window
+                                         (partial process (conj backlog freq))
+                                         process-interval)
+                            (let [freqs (select-freqs backlog peak-threshold)]
+                              (doseq [freq freqs]
+                                (.debug js/console (str "peaked: " freq))
+                                (put! c freq))
+                              (.setTimeout
+                               js/window
+                               (partial process [] process-interval))))))]
               (.connect mic analyser)
               (process [])))
       c)))
 
-(defn initialize-audio-context []
+
+(defn initialize-audio-context
+  [& {:keys [ramp-duration
+             duration
+             char-interval
+             process-interval
+             peak-threshold]
+      :or {ramp-duration 0.0001
+           duration 0.2
+           char-interval 0.4
+           process-interval 10
+           peak-threshold 20}}]
   (let [js-context (audio-context-constructor.)]
-    (AudioContext. js-context)))
+    (AudioContext. js-context
+                   ramp-duration
+                   duration
+                   char-interval
+                   process-interval
+                   peak-threshold)))
