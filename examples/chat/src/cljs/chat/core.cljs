@@ -1,9 +1,8 @@
 (ns chat.core
-  (:require-macros [cljs.core.async.macros :refer [go go-loop]])
+  (:require-macros [cljs.core.async.macros :refer [go-loop]])
   (:require [cljs.core.async :refer [<! chan]]
             [dommy.core :refer [set-text! text attr] :refer-macros [sel sel1]]
-            [sory.sound :refer [initialize-audio-context]]
-            [sory.codec :refer [encode <decode]]))
+            [sory.socket :refer [initialize-socket]]))
 
 
 (enable-console-print!)
@@ -32,19 +31,19 @@
 
 
 (defn setup-play []
-  (let [audio-context (initialize-audio-context)
+  (let [socket (initialize-socket)
         form (sel1 :#chat)]
     (set! (.-onsubmit form)
           (fn [e]
             (.preventDefault e)
             (let [form (.-currentTarget e)
                   message (.-value (aget (.-elements form) "message"))]
-              (.emit-sounds audio-context (encode message)))))))
+              (.broadcast! socket message))))))
 
 
 (defn setup-mic []
-  (let [audio-context (initialize-audio-context)]
-    (let [c (<decode (.<listen audio-context))]
+  (let [socket (initialize-socket)]
+    (let [c (.<listen socket)]
       (go-loop []
         (let [char (<! c)]
           (let [text-el (sel1 :#char)]
