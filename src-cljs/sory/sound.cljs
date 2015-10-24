@@ -1,6 +1,6 @@
 (ns sory.sound
   (:require [cljs.core.async :refer [<! put! chan]])
-  (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
+  (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def audio-context-constructor (or js/window.AudioContext
                                    js/window.webkitAudiocontext))
