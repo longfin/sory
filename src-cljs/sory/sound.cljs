@@ -24,23 +24,23 @@
     c))
 
 
-(defn- peak-freq [arr nyquist start-freq min-db]
-  (let [buffer-length (.-length arr)
+(defn- peak-freq [freqs nyquist start-freq min-db]
+  (let [buffer-length (.-length freqs)
         freq-to-index #(-> %
                            (/ nyquist)
                            (* buffer-length)
                            js/Math.round)
         index-to-freq #(* % (/ nyquist buffer-length))]
     (loop [i (freq-to-index start-freq)
-           index -1
-           max (- (.-Infinity js/window))]
+           max-index -1
+           max-db (- (.-Infinity js/window))]
       (if (< i buffer-length)
-        (let [val (aget arr i)]
-          (if (< max val)
-            (recur (inc i) i val)
-            (recur (inc i) index max)))
-        (when (< min-db max)
-          (index-to-freq index))))))
+        (let [db (aget freqs i)]
+          (if (< max-db db)
+            (recur (inc i) i db)
+            (recur (inc i) max-index max-db)))
+        (when (< min-db max-db)
+          (index-to-freq max-index))))))
 
 
 (defn- fetch-freqs [analyser]
