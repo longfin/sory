@@ -40,6 +40,8 @@
             (recur (inc i) i db)
             (recur (inc i) max-index max-db)))
         (when (< min-db max-db)
+          (.debug js/console (str "feched db: " max-db))
+          (.debug js/console (str "feched freq: " (index-to-freq max-index)))
           (index-to-freq max-index))))))
 
 
@@ -51,6 +53,8 @@
 
 
 (defn- select-freqs [freqs threshold]
+  (when (not (empty? freqs))
+    (.debug js/console (str "before select: " freqs)))
   (->> freqs
        (partition-by identity)
        (map #(vector (count %) (first %)))
@@ -100,7 +104,7 @@
               nyquist (/ (.-sampleRate js-context) 2)
               process (fn process [backlog]
                         (let [raw-freqs (fetch-freqs analyser)]
-                          (if-let [freq (peak-freq raw-freqs nyquist 18000 -80)]
+                          (if-let [freq (peak-freq raw-freqs nyquist 16000 -70)]
                             (.setTimeout js/window
                                          (partial process (conj backlog freq))
                                          process-interval)
@@ -126,7 +130,7 @@
            duration 0.2
            char-interval 0.4
            process-interval 10
-           peak-threshold 20}}]
+           peak-threshold 10}}]
   (let [js-context (audio-context-constructor.)]
     (AudioContext. js-context
                    ramp-duration

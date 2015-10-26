@@ -3,8 +3,8 @@
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
 
-(def low-bits-offset 18500)
-(def high-bits-offset 19500)
+(def low-bits-offset 17500)
+(def high-bits-offset 18500)
 
 
 (defn- normalize-freq [freq]
