@@ -64,11 +64,12 @@
         (swap! state assoc :courses courses)))
     (fn []
       [:table
+       {:class "table"}
        [:thead
         [:tr
          [:th "강의명"]
          [:th "강사명"]
-         [:th ""]]]
+         [:th "출석"]]]
        [:tbody
         (for [c (:courses @state)]
           ^{:key c}
@@ -76,8 +77,10 @@
            [:td (-> c :name)]
            [:td (-> c :tutor :name)]
            [:td
-            [:button {:type "butotn"
-                      :on-click #(start-attendance (:_id c))}
+            [:button
+             {:type "button"
+              :class "btn btn-default btn-sm"
+              :on-click #(start-attendance (:_id c))}
              "출석 체크"]]])]])))
 
 
