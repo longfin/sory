@@ -73,7 +73,8 @@
                        duration
                        char-interval
                        process-interval
-                       peak-threshold]
+                       peak-threshold
+                       ^:volatile-mutable current-media-stream]
   Object
 
   (emit-sound [_ freq started-at]
@@ -121,9 +122,15 @@
                               (.setTimeout
                                js/window
                                (partial process [] process-interval))))))]
-              (.connect mic analyser)
-              (process [])))
-      c)))
+          (set! current-media-stream stream)
+          (.connect mic analyser)
+          (process [])))
+      c))
+
+  (stop! [_]
+    (when (not (nil? current-media-stream))
+      (.stop current-media-stream))
+    (set! current-media-stream nil)))
 
 
 (defn initialize-audio-context
@@ -143,4 +150,5 @@
                    duration
                    char-interval
                    process-interval
-                   peak-threshold)))
+                   peak-threshold
+                   nil)))

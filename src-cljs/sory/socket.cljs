@@ -17,7 +17,10 @@
       (.emit-sounds audio-context encoded-message)))
 
   (<listen [_]
-    (<decode (.<listen audio-context))))
+    (<decode (.<listen audio-context)))
+
+  (stop! [_]
+    (.stop! audio-context)))
 
 
 (defn initialize-socket []
