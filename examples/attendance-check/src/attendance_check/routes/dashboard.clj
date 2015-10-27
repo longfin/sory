@@ -17,8 +17,8 @@
             [langohr.queue :as lq]))
 
 
-(defn index []
-  (layout/render "index.html"))
+(defn index [{session :session}]
+  (layout/render "index.html" (select-keys session [:tutor])))
 
 
 (defn get-login [{:keys [flash]}]
@@ -63,6 +63,11 @@
      :body {:result :error}}))
 
 
+(defn logout [{session :session}]
+  (-> (redirect "/dashboard")
+      (assoc :session (dissoc session :tutor))))
+
+
 (defn course-stream [course-id check-id]
   (let [course (d/get-course-by-id course-id)
         body (a/chan)
@@ -101,10 +106,11 @@
 
 (defroutes secured-routes
   rest-api-routes
-  (GET "/" [] (index))
+  (GET "/" request (index request))
   (GET "/courses/:course/attendance-checks/:check/"
        [course check]
-       (course-stream course check)))
+       (course-stream course check))
+  (GET "/logout" request (logout request)))
 
 
 (defroutes dashboard-routes

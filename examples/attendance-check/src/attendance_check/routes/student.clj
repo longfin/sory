@@ -19,8 +19,9 @@
       (redirect "/student/login"))))
 
 
-(defn index []
-  (layout/render "index.html"))
+(defn index [{session :session}]
+  (println session)
+  (layout/render "index.html" (select-keys session [:student])))
 
 
 (defn get-login [{:keys [flash]}]
@@ -76,7 +77,7 @@
 
 (defroutes secured-routes
   rest-api-routes
-  (GET "/" [] (index)))
+  (GET "/" request (index request)))
 
 
 (defroutes student-routes
