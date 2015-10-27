@@ -1,8 +1,13 @@
 (ns attendance-check.student
   (:require [ajax.core :refer [GET POST]]
+            [cljs.core.async :refer [<!]]
             [cljs.core.async :refer [chan put! <!]]
-            [reagent.core :as reagent])
-  (:require-macros [cljs.core.async.macros :refer [go]]))
+            [reagent.core :as reagent]
+            [sory.socket :refer [initialize-socket]])
+  (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
+
+
+(defonce sory-socket (initialize-socket))
 
 
 (defn <get-courses []
@@ -22,9 +27,33 @@
            :format :raw})))
 
 
+(defn rotate [coll start end]
+  (let [tail (take-while #(not (= % start)) coll)
+        body (->> coll
+                  (drop-while #(not (= % start)))
+                  (take-while #(not (= % (first tail)))))]
+    (concat body tail)))
+
+
 (defn start-attendance [course-id]
-  ;; TODO implement with sory lib
-  (.alert js/window course-id))
+  (let [chan (.<listen sory-socket)
+        start-char \^
+        end-char \$]
+    (go-loop [backlog []]
+      (if (= (count backlog) 6)
+        (when (and (some #(= % start-char) backlog)
+                 (some #(= % end-char) backlog))
+          (let [code (->>
+                      (rotate backlog start-char end-char)
+                      (drop 1)
+                      (drop-last 1)
+                      (apply str))]
+            (attendance course-id code)
+            (.debug js/console (str "posted:" code)))
+          (recur []))
+        (let [char (<! chan)]
+          (.debug js/console (str "recevied: " char))
+          (recur (conj backlog char)))))))
 
 
 (defn course-table []
@@ -64,5 +93,4 @@
 
 (defn start []
   (mount-components)
-  (aset js/window "attendance" attendance)
   nil)

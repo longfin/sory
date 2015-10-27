@@ -51,7 +51,7 @@
 
 (defn post-attendance-check [course-id]
   (if-let [course (d/get-course-by-id course-id)]
-    (let [code (apply str (take 6 (repeatedly #(rand-int 9))))
+    (let [code (apply str (take 4 (repeatedly #(rand-int 9))))
           check (->
                  {:course course
                   :code code}

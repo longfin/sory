@@ -1,8 +1,12 @@
 (ns attendance-check.dashboard
   (:require [ajax.core :refer [GET POST]]
-            [cljs.core.async :refer [chan put! <!]]
-            [reagent.core :as reagent])
+            [cljs.core.async :refer [chan put! <! close!]]
+            [reagent.core :as reagent]
+            [sory.socket :refer [initialize-socket]])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
+
+
+(defonce sory-socket (initialize-socket))
 
 
 (defn <get-courses []
@@ -57,36 +61,56 @@
     c))
 
 
-(defn <attendance-stream [stream-url]
+(defn <attendance-stream [event-source]
   (let [c (chan)]
     (go
-      (let [event-source (new js/EventSource stream-url)]
-        (.addEventListener event-source "message" #(put! c %))))
+      (.addEventListener event-source "message" #(put! c %)))
     c))
 
 
+(defn broadcast-sound [code]
+  (let [message (str "^" code "$")]
+    (.broadcast! sory-socket message)
+    (.setInterval js/window
+                  #(.broadcast! sory-socket message)
+                  (* (count message) 1000))))
+
+
 (defn students-section [props]
-  (let [checked-students (reagent/atom #{})]
+  (let [checked-students (reagent/atom #{})
+        timer-id (reagent/atom nil)
+        event-source (atom nil)
+        stream (atom nil)]
     (letfn [(start-check [course-id]
               (reset! checked-students #{})
               (let [check-url (str "/dashboard/courses/"
                                    course-id
                                    "/attendance-checks/")]
                 (go
-                  (let [check-id (-> check-url
-                                     <register-check-session
-                                     <!
-                                     (get "_id"))
+                  (let [check (-> check-url
+                                  <register-check-session
+                                  <!)
+                        check-id (get check "_id")
                         stream-url (str check-url check-id "/")
-                        stream (<attendance-stream stream-url)]
+                        code (get check "code")]
+                    (reset! event-source (new js/EventSource stream-url))
+                    (reset! stream (<attendance-stream @event-source))
+                    (reset! timer-id (broadcast-sound code))
                     (go-loop []
-                      (let [student (->> stream
+                      (let [student (->> @stream
                                          <!
                                          (.-data)
                                          (.parse js/JSON)
                                          (.-student))]
                         (swap! checked-students conj (.-_id student))
-                        (recur)))))))]
+                        (recur)))))))
+            (stop-check []
+              (.clearInterval js/window @timer-id)
+              (.close @event-source)
+              (close! @stream)
+              (reset! event-source nil)
+              (reset! stream nil)
+              (reset! timer-id nil))]
       (fn [props]
         (let [{:keys [students course]} props]
           [:div
@@ -110,12 +134,19 @@
                   "수강 중인 학생이 없습니다."]])]]
 
            (when (not (empty? students))
-             [:button
-              {:class "btn btn-default btn-lg"
-               :style {:width "100%"}
-               :type "button"
-               :on-click #(start-check (:_id course))}
-              "출석 부르기"])])))))
+             (if (nil? @timer-id)
+               [:button
+                {:class "btn btn-default btn-lg"
+                 :style {:width "100%"}
+                 :type "button"
+                 :on-click #(start-check (:_id course))}
+                "출석 부르기"]
+               [:button
+                {:class "btn btn-default btn-lg"
+                 :style {:width "100%"}
+                 :type "button"
+                 :on-click stop-check}
+                "그만 부르기"]))])))))
 
 
 (defn app []
