@@ -1,12 +1,15 @@
 (ns attendance-check.dashboard
   (:require [ajax.core :refer [GET POST]]
             [cljs.core.async :refer [chan put! <! close!]]
+            [cljs-time.core :refer [time-now]]
+            [cljs-time.format :refer [formatter unparse]]
             [reagent.core :as reagent]
             [sory.socket :refer [initialize-socket]])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 
 (defonce sory-socket (initialize-socket))
+(defonce time-formatter (formatter "yyyy-MM-dd HH:mm:ss"))
 
 
 (defn <get-courses []
@@ -77,12 +80,12 @@
 
 
 (defn students-section [props]
-  (let [checked-students (reagent/atom #{})
+  (let [checked-students (reagent/atom {})
         timer-id (reagent/atom nil)
         event-source (atom nil)
         stream (atom nil)]
     (letfn [(start-check [course-id]
-              (reset! checked-students #{})
+              (reset! checked-students {})
               (let [check-url (str "/dashboard/courses/"
                                    course-id
                                    "/attendance-checks/")]
@@ -102,7 +105,9 @@
                                          (.-data)
                                          (.parse js/JSON)
                                          (.-student))]
-                        (swap! checked-students conj (.-_id student))
+                        (swap! checked-students assoc
+                               (.-_id student)
+                               (time-now))
                         (recur)))))))
             (stop-check []
               (.clearInterval js/window @timer-id)
@@ -126,7 +131,9 @@
                   ^{:key s}
                   [:tr
                    [:td (:name s)]
-                   [:td (if (@checked-students (:_id s)) "출석" "미확인")]]))
+                   [:td
+                    (when-let [attendance-at (get @checked-students (:_id s))]
+                      (unparse time-formatter attendance-at))]]))
                 [:tr
                  [:td
                   {:colSpan "2"
