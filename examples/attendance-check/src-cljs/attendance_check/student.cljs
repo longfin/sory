@@ -41,7 +41,7 @@
     (letfn [(start-attendance [course-id]
               (let [chan (.<listen sory-socket)]
                 (go-loop [backlog []]
-                  (if (= (count backlog) 4)
+                  (if (= (count backlog) 2)
                     (when-let [code (decode backlog)]
                       (.debug js/console (str "posted:" code))
                       (let [_ (<attendance course-id code)]

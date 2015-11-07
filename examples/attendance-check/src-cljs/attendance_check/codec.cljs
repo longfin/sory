@@ -2,50 +2,34 @@
   (:require [cuerdas.core :refer [pad]]))
 
 
-(def start-char \^)
-(def end-char \$)
+(defn int-to-bytes [n]
+  [(bit-or (bit-and (bit-shift-right n 7) 0x7F) 0x80)
+   (bit-and n 0x7F)])
 
 
-(defn uint16-to-bytes [n]
-  [(bit-and n 0xFF)
-   (bit-and (bit-shift-right n 8)
-                     0xFF)])
-
-
-(defn bytes-to-uint16 [[low-byte high-byte]]
-  (.debug js/console (str "bytes-to-uint16:" low-byte "/" high-byte))
-  (bit-or low-byte
-          (bit-shift-left high-byte 8)))
-
-
-(defn- rotate [coll start end]
-  (let [tail (take-while #(not (= % start)) coll)
-        body (->> coll
-                  (drop-while #(not (= % start)))
-                  (take-while #(not (= % (first tail)))))]
-    (concat body tail)))
+(defn bytes-to-int [bytes]
+  (let [high (->> bytes
+                  (filter #(= 0x80 (bit-and % 0x80)))
+                  first
+                  (bit-and 0x7F))
+        low (->> bytes
+                 (filter #(= 0 (bit-and % 0x80)))
+                 first)]
+    (bit-or (bit-shift-left high 7)
+            low)))
 
 
 (defn encode [code]
-  (let [byte-str (->> code
-                      int
-                      uint16-to-bytes
-                      (map js/String.fromCharCode)
-                      (apply str))]
-    (str start-char
-         byte-str
-         end-char)))
+  (->> code
+       int
+       int-to-bytes
+       (map js/String.fromCharCode)
+       (apply str)))
 
 
 (defn decode [bs]
-  (when (and (some #(= % start-char) bs)
-             (some #(= % end-char) bs))
-    (let [bytes (->>
-                (rotate bs start-char end-char)
-                (drop 1)
-                (drop-last 1)
-                (map #(.charCodeAt %)))]
-      (-> bytes
-          bytes-to-uint16
-          str
-          (pad {:length 4 :padding "0"})))))
+  (let [bytes (map #(.charCodeAt %) bs)]
+    (-> bytes
+        bytes-to-int
+        str
+        (pad {:length 4 :padding "0"}))))

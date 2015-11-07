@@ -74,6 +74,7 @@
 
 (defn broadcast-sound [code]
   (let [message (encode code)]
+    (.debug js/console (str "broadcated: " code))
     (.broadcast! sory-socket message)
     (.setInterval js/window
                   #(.broadcast! sory-socket message)
