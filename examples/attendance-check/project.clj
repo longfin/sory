@@ -36,7 +36,8 @@
                  [com.novemberain/langohr "3.3.0"]
                  [crypto-password "0.1.3"]
                  [org.clojure/data.json "0.2.6"]
-                 [com.andrewmcveigh/cljs-time "0.3.14"]]
+                 [com.andrewmcveigh/cljs-time "0.3.14"]
+                 [funcool/cuerdas "0.6.0"]]
 
   :min-lein-version "2.0.0"
   :uberjar-name "attendance-check.jar"

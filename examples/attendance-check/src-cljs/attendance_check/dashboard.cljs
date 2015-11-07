@@ -1,5 +1,6 @@
 (ns attendance-check.dashboard
-  (:require [ajax.core :refer [GET POST]]
+  (:require [attendance-check.codec :refer [encode]]
+            [ajax.core :refer [GET POST]]
             [cljs.core.async :refer [chan put! <! close!]]
             [cljs-time.core :refer [time-now]]
             [cljs-time.format :refer [formatter unparse]]
@@ -72,7 +73,7 @@
 
 
 (defn broadcast-sound [code]
-  (let [message (str "^" code "$")]
+  (let [message (encode code)]
     (.broadcast! sory-socket message)
     (.setInterval js/window
                   #(.broadcast! sory-socket message)

@@ -1,5 +1,6 @@
 (ns attendance-check.student
-  (:require [ajax.core :refer [GET POST]]
+  (:require [attendance-check.codec :refer [decode]]
+            [ajax.core :refer [GET POST]]
             [cljs.core.async :refer [chan put! <! close!]]
             [reagent.core :as reagent]
             [sory.socket :refer [initialize-socket]])
@@ -30,14 +31,6 @@
     c))
 
 
-(defn rotate [coll start end]
-  (let [tail (take-while #(not (= % start)) coll)
-        body (->> coll
-                  (drop-while #(not (= % start)))
-                  (take-while #(not (= % (first tail)))))]
-    (concat body tail)))
-
-
 (defn course-table []
   (let [courses-chan (<get-courses)
         courses (reagent/atom [])
@@ -46,22 +39,14 @@
       (let [fetched (-> courses-chan <! :courses)]
         (reset! courses fetched)))
     (letfn [(start-attendance [course-id]
-              (let [chan (.<listen sory-socket)
-                    start-char \^
-                    end-char \$]
+              (let [chan (.<listen sory-socket)]
                 (go-loop [backlog []]
-                  (if (= (count backlog) 6)
-                    (when (and (some #(= % start-char) backlog)
-                               (some #(= % end-char) backlog))
-                      (let [code (->>
-                                  (rotate backlog start-char end-char)
-                                  (drop 1)
-                                  (drop-last 1)
-                                  (apply str))]
-                        (let [_ (<attendance course-id code)]
-                          (.alert js/window "처리되었습니다.")
-                          (stop)
-                          (.debug js/console (str "posted:" code))))
+                  (if (= (count backlog) 4)
+                    (when-let [code (decode backlog)]
+                      (.debug js/console (str "posted:" code))
+                      (let [_ (<attendance course-id code)]
+                        (.alert js/window "처리되었습니다.")
+                        (stop))
                       (recur []))
                     (let [char (<! chan)]
                       (.debug js/console (str "recevied: " char))
