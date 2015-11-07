@@ -25,7 +25,10 @@
     (go
       (let [url (str "/student/courses/" course-id "/attendance-checks/")]
         (POST url
-              {:handler #(put! c %)
+              {:handler #(put! c {:result :success
+                                  :response %})
+               :error-handler #(put! c {:result :error
+                                        :response %})
                :params {:code code}
                :format :raw})))
     c))
@@ -44,9 +47,15 @@
                   (if (= (count backlog) 2)
                     (when-let [code (decode backlog)]
                       (.debug js/console (str "posted:" code))
-                      (let [_ (<attendance course-id code)]
-                        (.alert js/window "처리되었습니다.")
-                        (stop))
+                      (go
+                        (let [r (<! (<attendance course-id code))]
+                         (if (= (:result r) :success)
+                           (do
+                             (.alert js/window "처리되었습니다.")
+                             (stop))
+                           (do
+                             ;; retry...
+                             (.error js/console r)))))
                       (recur []))
                     (let [char (<! chan)]
                       (.debug js/console (str "recevied: " char))

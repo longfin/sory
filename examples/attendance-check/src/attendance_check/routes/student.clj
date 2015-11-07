@@ -8,7 +8,7 @@
             [langohr.core :as rmq]
             [langohr.channel :as lch]
             [monger.operators :refer [$elemMatch]]
-            [ring.util.response :refer [redirect]])
+            [ring.util.http-response :refer [bad-request found]])
   (:import org.bson.types.ObjectId))
 
 
@@ -16,7 +16,7 @@
   (fn [request]
     (if-let [student (-> request :session :student)]
       (handler request)
-      (redirect "/student/login"))))
+      (found "/student/login"))))
 
 
 (defn index [{session :session}]
@@ -34,10 +34,10 @@
         student (first (d/get-student {:email email}))]
     (if (and student
              (password/check password (:password student)))
-      (-> (redirect "/student/")
+      (-> (found "/student/")
           (assoc :session (assoc session :student
                                  (d/serialize student))))
-      (-> (redirect "/student/login")
+      (-> (found "/student/login")
           (assoc :flash {:errors "해당하는 사용자가 없습니다."})))))
 
 
@@ -53,16 +53,20 @@
   (let [code (form-params "code")
         student (:student session)
         course (d/get-course-by-id course-id)
-        check (first (d/get-attendance-check {:code code}))
-        queue (format "courses/%s/check/%s" course-id (str (:_id check)))
-        amqp-conn (rmq/connect)
-        chan (lch/open amqp-conn)]
-    (lb/publish chan "" queue (prn-str {:student student}))
-    (rmq/close chan)
-    (rmq/close amqp-conn)
-    {:body
-     {:check (d/serialize check)
-      :result :success}}))
+        check (first (d/get-attendance-check {:code code}))]
+    (if (not (nil? check))
+      (let [queue (format "courses/%s/check/%s"
+                          course-id
+                          (str (:_id check)))
+            amqp-conn (rmq/connect)
+            chan (lch/open amqp-conn)]
+        (lb/publish chan "" queue (prn-str {:student student}))
+        (rmq/close chan)
+        (rmq/close amqp-conn)
+        {:body
+         {:check (d/serialize check)
+          :result :success}})
+      (bad-request (format "Invalid code %s" code)))))
 
 
 (def rest-api-routes
