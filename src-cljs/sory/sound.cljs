@@ -5,15 +5,23 @@
 
 
 (ns sory.sound
+  "Define some interfaces to emit sound via HTML5 Web Audio API."
+
   (:require [cljs.core.async :refer [<! put! chan]])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
 
-(def audio-context-constructor (or js/window.AudioContext
-                                   js/window.webkitAudiocontext))
+(def ^{:doc "Wrapper for native JavaScript AudioContext constructor"}
+  audio-context-constructor (or js/window.AudioContext
+                                js/window.webkitAudiocontext))
 
 
-(defn- <media-stream []
+(defn- <media-stream
+  "Returns a channel that requesting HTML5 WebAudio interface.
+  This returns `go` channel."
+  {:doc/format :markdown}
+
+  []
   (let [c (chan)]
     (go
       (let [navigator (.-navigator js/window)
@@ -30,7 +38,11 @@
     c))
 
 
-(defn- peak-freq [freqs nyquist start-freq min-db]
+(defn- peak-freq
+  "Peak highest frequency in freq with given nyquist value."
+  {:doc/format :markdown}
+
+  [freqs nyquist start-freq min-db]
   (let [buffer-length (.-length freqs)
         freq-to-index #(-> %
                            (/ nyquist)
@@ -51,14 +63,23 @@
           (index-to-freq max-index))))))
 
 
-(defn- fetch-freqs [analyser]
+(defn- fetch-freqs
+  "Fetch frequencies from given analyzer.
+  it uses JavaScript native float array (`Float32Array`)"
+  {:doc/format :markdown}
+
+  [analyser]
   (let [buffer-length (.-frequencyBinCount analyser)
         buffer (js/Float32Array. buffer-length)]
     (.getFloatFrequencyData analyser buffer)
     buffer))
 
 
-(defn- select-freqs [freqs threshold]
+(defn- select-freqs
+    "Select frequency from frequencies by continoucity."
+  {:doc/format :markdown}
+
+  [freqs threshold]
   (when (not (empty? freqs))
     (.debug js/console (str "before select: " freqs)))
   (->> freqs
@@ -68,33 +89,49 @@
        (map val)))
 
 
-(deftype AudioContext [js-context
-                       ramp-duration
-                       duration
-                       char-interval
-                       process-interval
-                       peak-threshold
-                       ^:volatile-mutable current-media-stream]
+(deftype AudioContext
+  ;; Construct facade for audio relative interfaces.
+  ;; Don't initialize this by constructor(`.AudioContext`) since its options are too
+  ;; verbose. Use `initialize-audio-context()` instead.
+
+  [js-context
+   ramp-duration
+   duration
+   char-interval
+   process-interval
+   peak-threshold
+   ^:volatile-mutable current-media-stream]
+
   Object
 
-  (emit-sound [_ freq started-at]
-     (let [oscillator (.createOscillator js-context)
-           gain-node (.createGain js-context)
-           gain (.-gain gain-node)]
-       (.connect gain-node (.-destination js-context))
-       (set! (.-value gain) 0)
-       (set! (.-value (.-frequency oscillator)) freq)
-       (.setValueAtTime gain 0 started-at)
-       (.linearRampToValueAtTime gain 1 (+ started-at ramp-duration))
-       (.setValueAtTime gain 1 (- (+ started-at duration) ramp-duration))
-       (.linearRampToValueAtTime gain 0 (+ started-at duration))
-       (.connect oscillator gain-node)
-       (.start oscillator)))
+  (emit-sound
+      ;; Generates sound with specific frequency at given time.
 
-  (emit-sound [this freq]
-    (.emit-sound this freq (.-currentTime js-context)))
+      [_ freq started-at]
+      (let [oscillator (.createOscillator js-context)
+            gain-node (.createGain js-context)
+            gain (.-gain gain-node)]
+        (.connect gain-node (.-destination js-context))
+        (set! (.-value gain) 0)
+        (set! (.-value (.-frequency oscillator)) freq)
+        (.setValueAtTime gain 0 started-at)
+        (.linearRampToValueAtTime gain 1 (+ started-at ramp-duration))
+        (.setValueAtTime gain 1 (- (+ started-at duration) ramp-duration))
+        (.linearRampToValueAtTime gain 0 (+ started-at duration))
+        (.connect oscillator gain-node)
+        (.start oscillator)))
 
-  (emit-sounds [this freqs]
+  (emit-sound
+      ;; Generates sound with specific frequency immediately.
+
+      [this freq]
+      (.emit-sound this freq (.-currentTime js-context)))
+
+  (emit-sounds
+      ;; Generates sound with specific frequencies.
+      ;; it schedule timing of frequency to play automatically.
+
+      [this freqs]
     (loop [i 0
            started-at (.-currentTime js-context)]
       (when (< i (count freqs))
@@ -102,7 +139,11 @@
           (.emit-sound this freq started-at))
         (recur (inc i) (+ started-at char-interval)))))
 
-  (<listen [_]
+  (<listen
+      ;; Listen to sound via HTML5 WebAudio API and return channel that stream
+      ;; listening results.
+
+      [_]
     (let [c (chan)]
       (go
         (let [stream (<! (<media-stream))
@@ -127,13 +168,38 @@
           (process [])))
       c))
 
-  (stop! [_]
+  (stop!
+      ;; Stops current listening session.
+
+      [_]
     (when (not (nil? current-media-stream))
       (.stop current-media-stream))
     (set! current-media-stream nil)))
 
 
 (defn initialize-audio-context
+  "intialize `AudioContext` object using given options.
+
+  Usage example:
+
+  ```
+  (initialize-audio-context {})
+
+  ;; or
+
+  (initialize-audio-context {:ramp-duration 0.0001 :char-interval 0.1}
+  ```
+
+  Options
+
+    - `:ramp-duration` duration seconds  ramp up volume.
+    - `:duration` sound playing seconds.
+    - `:char-interval` continous emit interval.
+    - `:process-interval` polling rate for process loop.
+    - `:peak-threshold` minimum count of peak a valid frequency.
+  "
+  {:doc/format :markdown}
+
   [& {:keys [ramp-duration
              duration
              char-interval
@@ -151,4 +217,5 @@
                    char-interval
                    process-interval
                    peak-threshold
+                   ;; current-media-stream
                    nil)))

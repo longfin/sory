@@ -30,7 +30,10 @@
     (.stroke canvas-context)))
 
 
-(defn setup-play []
+(defn setup-play
+  "initialize sory socket and register callback to broadcast given value."
+
+  []
   (let [socket (initialize-socket)
         form (sel1 :#chat)]
     (set! (.-onsubmit form)
@@ -41,7 +44,10 @@
               (.broadcast! socket message))))))
 
 
-(defn setup-mic []
+(defn setup-mic
+  "Initialize sory socket and register callback to print received value."
+
+  []
   (let [socket (initialize-socket)]
     (let [c (.<listen socket)]
       (go-loop []
@@ -52,6 +58,7 @@
         (recur)))))
 
 
+;; entry point
 (set! (.-onload js/window)
       (fn []
         (setup-play)

@@ -5,15 +5,29 @@
 
 
 (ns sory.codec
+  "Define codec interface to en/decode sound relative data.
+
+  TODO: write overall structure.
+  "
+  {:doc/format :markdown}
+
   (:require [cljs.core.async :refer [<! put! chan]])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
 
-(def low-bits-offset 17500)
-(def high-bits-offset 18500)
+(def
+  ^{:doc "frequency lower boundary."}
+  low-bits-offset 17500)
+(def
+  ^{:doc "frequency higher boundary."}
+  high-bits-offset 18500)
 
 
-(defn- normalize-freq [freq]
+(defn- normalize-freq
+  "Normalize frequency by specific value."
+  {:doc/format :markdown}
+
+  [freq]
   (.debug js/console (str "pre-normalized: " freq))
   (let [ifreq (js/Math.round freq)
         m (mod ifreq 50)]
@@ -22,16 +36,28 @@
       (+ ifreq (- 50 m)))))
 
 
-(defn- encode-bits [bs offset]
+(defn- encode-bits
+  "Encode bit array to frequency value."
+  {:doc/format :markdown}
+
+  [bs offset]
   (.debug js/console (str "encoded: " (-> bs (* 50) (+ offset))))
   (-> bs (* 50) (+ offset)))
 
 
-(defn- decode-bits [freq offset]
+(defn- decode-bits
+  "Decode frequency to bit array."
+  {:doc/format :markdown}
+
+  [freq offset]
   (-> freq (- offset) (/ 50)))
 
 
-(defn- validate-and-decode-bits [freq high-bits?]
+(defn- validate-and-decode-bits
+  "Decode frequency to bit array if available."
+  {:doc/format :markdown}
+
+  [freq high-bits?]
   (if high-bits?
     (when (>= freq high-bits-offset)
       (decode-bits freq high-bits-offset))
@@ -40,7 +66,34 @@
       (decode-bits freq low-bits-offset))))
 
 
-(defn encode [s]
+(defn encode
+  "Encode given sequable to frequencies as lazy sequence.
+
+  it returns an interleaved bit having the structure shown below...
+
+
+  [\\a \\b \\c ...] => [freq(higher 4bit of \\a),
+                        freq(lower 4bit of \\a),
+                        freq(hihger 4bit of \\b),
+                        freq(lower 4bit of \\b),
+                        freq(higher 4bit of \\c),
+                        freq(lower 4bit of \\c),
+                        ...]
+
+
+  Usages:
+
+  ```
+  (encode \"some value\")
+
+  or
+
+  (encode `(\\a \\b \\c))
+  ```
+  "
+  {:doc/format :markdown}
+
+  [s]
   (let [bs (map #(.charCodeAt %) s)]
     (interleave
      (map #(-> %
@@ -54,7 +107,21 @@
           bs))))
 
 
-(defn <decode [channel]
+(defn <decode
+  "Receive frequency stream channel and return channel that stream decoded value.
+
+  Usages:
+  ```
+  (let [c (<listen ctx)
+        decoded-chan (<decoed c)]
+    (go-loop []
+      (let [decoded-val (<! decoed-chan)]
+      (println decoded-val))))
+  ```
+  "
+  {:doc/format :markdown}
+
+  [channel]
   (let [c (chan)]
     (go-loop [prev nil]
       (.debug js/console (str "prev:" prev))

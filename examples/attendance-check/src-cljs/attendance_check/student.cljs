@@ -1,4 +1,7 @@
 (ns attendance-check.student
+  "Stduent side sample app
+  it only receives sound signal from dashboard app. (no emit logic)"
+
   (:require [attendance-check.codec :refer [decode]]
             [ajax.core :refer [GET POST]]
             [cljs.core.async :refer [chan put! <! close!]]
@@ -7,6 +10,7 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 
+;; initialize sory-socket only once.
 (defonce sory-socket (initialize-socket))
 
 
@@ -102,7 +106,9 @@
                   "입실"])]]))]]]))))
 
 
-(defn app []
+(defn app
+  "Root component of student app."
+  []
   (fn []
     [:div
      [course-table]]))
@@ -112,6 +118,8 @@
   (reagent/render [#'app] (.getElementById js/document "app")))
 
 
-(defn start []
+(defn start
+  "Entry point of student app."
+  []
   (mount-components)
   nil)

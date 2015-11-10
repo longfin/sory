@@ -1,4 +1,7 @@
 (ns attendance-check.dashboard
+  "Tutor side smpale app
+  it only broadcasts sound signal to student app. (no receive logic)"
+
   (:require [attendance-check.codec :refer [encode]]
             [ajax.core :refer [GET POST]]
             [cljs.core.async :refer [chan put! <! close!]]
@@ -9,6 +12,7 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 
+;; initialize-socket only once.
 (defonce sory-socket (initialize-socket))
 (defonce time-formatter (formatter "yyyy-MM-dd HH:mm:ss"))
 
@@ -158,7 +162,9 @@
                 "그만 부르기"]))])))))
 
 
-(defn app []
+(defn app
+  "Root component of dashboard app."
+  []
   (let [state (reagent/atom {:coruse nil})]
     (fn []
       (let [course (:course @state)
@@ -174,6 +180,8 @@
   (reagent/render [#'app] (.getElementById js/document "app")))
 
 
-(defn start []
+(defn start
+  "Entry point of dashboard app."
+  []
   (mount-components)
   nil)

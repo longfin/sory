@@ -18,7 +18,26 @@
               db))
 
 
-(defmacro defcrud [entity & props]
+(defmacro defcrud
+  "Helper macro for define entity.
+  it generates CRUD function that manage entity having given properties.
+
+  Usage:
+
+  ```
+  (defcrud \"book\" :title :author)
+
+  ;; generates
+
+  (defn create-book [arg])
+  (defn get-book [arg])
+  (defn get-book-by-id [id])
+  (defn update-book [id arg])
+  (defn delete-book-by-id [id])
+  ```
+  "
+
+  [entity & props]
   (let [create-fn-sym (symbol (str "create-" entity))
         get-fn-sym (symbol (str "get-" entity))
         get-by-id-fn-sym (symbol (str "get-" entity "-by-id"))

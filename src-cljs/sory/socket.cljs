@@ -5,11 +5,18 @@
 
 
 (ns sory.socket
+  "Provides top-level communication interface."
+  {:doc/format :markdown}
+
   (:require [sory.sound :refer [initialize-audio-context]]
             [sory.codec :refer [encode <decode]]))
 
 
 (deftype SorySocket [audio-context]
+  ;; Construct socket interface.
+  ;; Don't initialize this by constructor(`.SorySocket`)
+  ;; Use `initialize-socket()` instead
+
   Object
 
   (broadcast! [_ message]
@@ -23,6 +30,10 @@
     (.stop! audio-context)))
 
 
+;; TODO Add options.
 (defn initialize-socket []
+  "Initialize sound socket object"
+  {:doc/format :markdown}
+
   (let [audio-context (initialize-audio-context)]
     (SorySocket. audio-context)))
