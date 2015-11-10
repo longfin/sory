@@ -77,12 +77,10 @@
 
 
 (defn- select-freqs
-    "Select frequency from frequencies by continoucity."
+    "Select frequencies from frequencies by continuity."
   {:doc/format :markdown}
 
   [freqs threshold]
-  (when (not (empty? freqs))
-    (dbg freqs "threshold-before select"))
   (->> freqs
        (partition-by identity)
        (map #(vector (count %) (first %)))

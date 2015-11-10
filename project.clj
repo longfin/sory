@@ -10,31 +10,40 @@
   :jvm-opts ["-server"]
 
   :plugins [[lein-cljsbuild "1.1.1"]
-            [lein-figwheel "0.4.1"]]
+            [lein-figwheel "0.4.1"]
+            [lein-doo "0.1.6-SNAPSHOT"]]
 
-  :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
+  :source-paths ["src-cljs" "src-clj"]
+  :clean-targets ^{:protect false} ["resources/public/js/compiled" "out"]
+
+  :doo {:build "test"
+        :paths {:karma "karma"}
+        :alias {:browsers [:chrome :firefox]
+                :all [:browsers :headless]}}
 
   :cljsbuild {
     :builds [{:id "dev"
-              :source-paths ["src-cljs" "src-clj"]
-
               :figwheel { :on-jsload "sory.core/on-js-reload" }
-
               :compiler {:main sory.core
                          :asset-path "js/compiled/out"
                          :output-to "resources/public/js/compiled/sory.js"
                          :output-dir "resources/public/js/compiled/out"
                          :source-map-timestamp true }}
+
              {:id "min"
-              :source-paths ["src-cljs" "src-clj"]
               :compiler {:output-to "resources/public/js/compiled/sory.js"
                          :main sory.core
                          :optimizations :advanced
-                         :pretty-print false}}]}
+                         :pretty-print false}}
+             {:id "test"
+              :source-paths ["src-clj" "src-cljs" "test"]
+              :compiler {:output-to "resources/public/js/compiled/testable.js"
+                         :main 'sory.tests.runner
+                         :optimizations :simple}}]}
 
   :figwheel {
              ;; :http-server-root "public" ;; default and assumes "resources"
-             ;; :server-port 3449 ;; default
+             ;; :server-port 3449 ;; defaultn
              ;; :server-ip "127.0.0.1"
 
              :css-dirs ["resources/public/css"] ;; watch and update CSS
