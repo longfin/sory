@@ -69,8 +69,10 @@
   {:doc/format :markdown}
 
   [analyser]
-  (let [buffer-length (.-frequencyBinCount analyser)
-        buffer (js/Float32Array. buffer-length)]
+  (let [buffer (->
+                analyser
+                .-frequencyBinCount
+                js/Float32Array.)]
     (.getFloatFrequencyData analyser buffer)
     buffer))
 
