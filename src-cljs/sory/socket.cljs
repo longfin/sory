@@ -1,3 +1,9 @@
+;; Copyright (C) 2015 longfin
+;;
+;; This software may be modified and distributed under the terms
+;; of the MIT license.  See the LICENSE file for details.
+
+
 (ns sory.socket
   (:require [sory.sound :refer [initialize-audio-context]]
             [sory.codec :refer [encode <decode]]))

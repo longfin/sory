@@ -1,3 +1,9 @@
+;; Copyright (C) 2015 longfin
+;;
+;; This software may be modified and distributed under the terms
+;; of the MIT license.  See the LICENSE file for details.
+
+
 (ns sory.sound
   (:require [cljs.core.async :refer [<! put! chan]])
   (:require-macros [cljs.core.async.macros :refer [go]]))
