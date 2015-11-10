@@ -12,7 +12,8 @@
   {:doc/format :markdown}
 
   (:require [cljs.core.async :refer [<! put! chan]])
-  (:require-macros [cljs.core.async.macros :refer [go-loop]]))
+  (:require-macros [cljs.core.async.macros :refer [go-loop]]
+                   [sory.macros :refer [dbg]]))
 
 
 (def
@@ -28,7 +29,7 @@
   {:doc/format :markdown}
 
   [freq]
-  (.debug js/console (str "pre-normalized: " freq))
+  (dbg freq)
   (let [ifreq (js/Math.round freq)
         m (mod ifreq 50)]
     (if (< m 25)
@@ -41,8 +42,7 @@
   {:doc/format :markdown}
 
   [bs offset]
-  (.debug js/console (str "encoded: " (-> bs (* 50) (+ offset))))
-  (-> bs (* 50) (+ offset)))
+  (dbg (-> bs (* 50) (+ offset))))
 
 
 (defn- decode-bits
@@ -124,14 +124,13 @@
   [channel]
   (let [c (chan)]
     (go-loop [prev nil]
-      (.debug js/console (str "prev:" prev))
       (let [freq (normalize-freq (<! channel))]
-        (when-let [bits (validate-and-decode-bits freq (nil? prev))]
-          (if (nil? prev)
+        (when-let [bits (dbg (validate-and-decode-bits freq (nil? prev)))]
+          (if (nil? (dbg prev))
             (recur bits)
             (let [prev-bits (bit-shift-left prev 4)
                   decoded (js/String.fromCharCode
                            (bit-or prev-bits bits))]
-              (put! c decoded))))
+              (put! c (dbg decoded)))))
         (recur nil)))
     c))

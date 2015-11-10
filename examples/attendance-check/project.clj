@@ -51,7 +51,7 @@
   :cljsbuild
   {:builds
    {:app
-    {:source-paths ["src-cljs" "../../src-cljs/"]
+    {:source-paths ["src-cljs" "../../src-cljs/" "../../src-clj/"]
      :compiler
      {:output-to "resources/public/js/app.js"
       :externs ["react/externs/react.js"]

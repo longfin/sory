@@ -8,7 +8,8 @@
   "Define some interfaces to emit sound via HTML5 Web Audio API."
 
   (:require [cljs.core.async :refer [<! put! chan]])
-  (:require-macros [cljs.core.async.macros :refer [go]]))
+  (:require-macros [cljs.core.async.macros :refer [go]]
+                   [sory.macros :refer [dbg]]))
 
 
 (def ^{:doc "Wrapper for native JavaScript AudioContext constructor"}
@@ -57,10 +58,8 @@
           (if (< max-db db)
             (recur (inc i) i db)
             (recur (inc i) max-index max-db)))
-        (when (< min-db max-db)
-          (.debug js/console (str "feched db: " max-db))
-          (.debug js/console (str "feched freq: " (index-to-freq max-index)))
-          (index-to-freq max-index))))))
+        (when (< (dbg min-db) (dbg max-db))
+          (dbg (index-to-freq max-index)))))))
 
 
 (defn- fetch-freqs
@@ -83,7 +82,7 @@
 
   [freqs threshold]
   (when (not (empty? freqs))
-    (.debug js/console (str "before select: " freqs)))
+    (dbg freqs "threshold-before select"))
   (->> freqs
        (partition-by identity)
        (map #(vector (count %) (first %)))
@@ -159,9 +158,8 @@
                                          (partial process (conj backlog freq))
                                          process-interval)
                             (let [freqs (select-freqs backlog peak-threshold)]
-                              (doseq [freq freqs]
-                                (.debug js/console (str "peaked: " freq))
-                                (put! c freq))
+                              (doseq [peaked-freq freqs]
+                                (put! c (dbg peaked-freq)))
                               (.setTimeout
                                js/window
                                (partial process [] process-interval))))))]

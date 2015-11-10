@@ -16,7 +16,7 @@
 
   :cljsbuild {
     :builds [{:id "dev"
-              :source-paths ["src-cljs"]
+              :source-paths ["src-cljs" "src-clj"]
 
               :figwheel { :on-jsload "sory.core/on-js-reload" }
 
@@ -26,7 +26,7 @@
                          :output-dir "resources/public/js/compiled/out"
                          :source-map-timestamp true }}
              {:id "min"
-              :source-paths ["src-cljs"]
+              :source-paths ["src-cljs" "src-clj"]
               :compiler {:output-to "resources/public/js/compiled/sory.js"
                          :main sory.core
                          :optimizations :advanced
